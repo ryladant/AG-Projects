@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+  <meta charset="UTF-8">
+  <title>AG - Quadrado Inteligente</title>
+  <style>
+    canvas { border: 1px solid black; image-rendering: pixelated; }
+    body { font-family: sans-serif; }
+  </style>
+</head>
+<body>
+<canvas id="canvas" width="500" height="500"></canvas>
+<script>
+const canvas = document.getElementById("canvas");
+const ctx = canvas.getContext("2d");
+const GRID_SIZE = 100;
+const CELL_SIZE = canvas.width / GRID_SIZE;
+const DNA_LENGTH = 200; // passos máximos
+const POP_SIZE = 100;
+const MUTATION_RATE = 0.01;
+const GOAL = [GRID_SIZE - 1, GRID_SIZE - 1]; // canto inferior direito
+
+let generation = 0;
+let population = [];
+let bestAgent = null;
+
+function randomDNA() {
+  const directions = [-1, 0, 1];
+  return Array.from({length: DNA_LENGTH}, () => [
+    directions[Math.floor(Math.random() * 3)],
+    directions[Math.floor(Math.random() * 3)]
+  ]);
+}
+
+function dnaToColor(dna) {
+  // Pega os primeiros 3 genes e transforma em RGB
+  const avg = dna.slice(0, 3).map(pair =>
+    Math.abs(pair[0] + pair[1]) * 85
+  );
+  return `rgb(${avg[0]}, ${avg[1]}, ${avg[2]})`;
+}
+
+function createAgent(dna = randomDNA()) {
+  return {
+    x: 0,
+    y: 0,
+    step: 0,
+    dna,
+    color: dnaToColor(dna),
+    finished: false,
+    fitness: 0
+  };
+}
+
+function fitness(agent) {
+  const dx = agent.x - GOAL[0];
+  const dy = agent.y - GOAL[1];
+  const dist = Math.sqrt(dx * dx + dy * dy);
+  return 1 / (dist + 1);
+}
+
+function updateAgent(agent) {
+  if (agent.finished || agent.step >= agent.dna.length) return;
+
+  const [dx, dy] = agent.dna[agent.step];
+  agent.x = Math.max(0, Math.min(GRID_SIZE - 1, agent.x + dx));
+  agent.y = Math.max(0, Math.min(GRID_SIZE - 1, agent.y + dy));
+  agent.step++;
+
+  if (agent.x === GOAL[0] && agent.y === GOAL[1]) {
+    agent.finished = true;
+  }
+}
+
+function drawAgent(agent) {
+  ctx.fillStyle = agent.color;
+  ctx.fillRect(agent.x * CELL_SIZE, agent.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+}
+
+function nextGeneration() {
+  population.forEach(agent => {
+    agent.fitness = fitness(agent);
+  });
+
+  const sorted = population.slice().sort((a, b) => b.fitness - a.fitness);
+  bestAgent = sorted[0];
+  const elites = sorted.slice(0, POP_SIZE / 2);
+
+  const newPop = [];
+  while (newPop.length < POP_SIZE) {
+    const parentA = elites[Math.floor(Math.random() * elites.length)];
+    const parentB = elites[Math.floor(Math.random() * elites.length)];
+
+    const childDNA = parentA.dna.map((gene, i) => {
+      if (Math.random() < MUTATION_RATE) {
+        return [
+          [-1, 0, 1][Math.floor(Math.random()*3)],
+          [-1, 0, 1][Math.floor(Math.random()*3)]
+        ];
+      }
+      return Math.random() < 0.5 ? gene : parentB.dna[i];
+    });
+
+    newPop.push(createAgent(childDNA));
+  }
+
+  population = newPop;
+  generation++;
+}
+
+function drawGrid() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  // Objetivo
+  ctx.fillStyle = "green";
+  ctx.fillRect(GOAL[0] * CELL_SIZE, GOAL[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+}
+
+function update() {
+  drawGrid();
+
+  if (generation < 200) {
+    population.forEach(agent => {
+      updateAgent(agent);
+      drawAgent(agent);
+    });
+
+    if (population.every(agent => agent.step >= DNA_LENGTH || agent.finished)) {
+      nextGeneration();
+      console.log("Geração:", generation, "| Melhor fitness:", bestAgent.fitness.toFixed(4));
+    }
+  } else {
+    // Após o treino, só executa o melhor agente
+    updateAgent(bestAgent);
+    drawAgent(bestAgent);
+  }
+
+  requestAnimationFrame(update);
+}
+
+// Inicialização
+population = Array.from({length: POP_SIZE}, () => createAgent());
+update();
+</script>
+</body>
+</html>
+
