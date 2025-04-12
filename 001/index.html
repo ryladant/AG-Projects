@@ -2,146 +2,227 @@
 <html lang="pt-br">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>AG - Quadrado Inteligente</title>
   <style>
-    canvas { border: 1px solid black; image-rendering: pixelated; }
-    body { font-family: sans-serif; }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: black;
+      color: lime;
+      font-family: monospace;
+      display: flex;
+      height: 100vh;
+    }
+
+    canvas {
+      background: black;
+      image-rendering: pixelated;
+      border: 1px solid #555;
+    }
+
+    #panel {
+      width: 300px;
+      padding: 20px;
+      background-color: #111;
+      border-left: 2px solid lime;
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+
+    .info { font-size: 14px; }
+    button, input {
+      background: black;
+      border: 1px solid lime;
+      color: lime;
+      padding: 5px;
+      font-family: monospace;
+    }
+    label { font-size: 14px; margin-bottom: 4px; display: block; }
   </style>
 </head>
 <body>
-<canvas id="canvas" width="500" height="500"></canvas>
-<script>
-const canvas = document.getElementById("canvas");
-const ctx = canvas.getContext("2d");
-const GRID_SIZE = 100;
-const CELL_SIZE = canvas.width / GRID_SIZE;
-const DNA_LENGTH = 200; // passos máximos
-const POP_SIZE = 100;
-const MUTATION_RATE = 0.01;
-const GOAL = [GRID_SIZE - 1, GRID_SIZE - 1]; // canto inferior direito
+  <canvas id="canvas" width="500" height="500"></canvas>
 
-let generation = 0;
-let population = [];
-let bestAgent = null;
+  <div id="panel">
+    <div class="info">🧬 <strong>Geração:</strong> <span id="generation">0</span></div>
+    <div class="info">🎨 <strong>Cor Predominante:</strong> <span id="color">---</span></div>
 
-function randomDNA() {
-  const directions = [-1, 0, 1];
-  return Array.from({length: DNA_LENGTH}, () => [
-    directions[Math.floor(Math.random() * 3)],
-    directions[Math.floor(Math.random() * 3)]
-  ]);
-}
+    <div>
+      <label for="speed">⏱ Velocidade:</label>
+      <input type="range" id="speed" min="1" max="60" value="30">
+    </div>
 
-function dnaToColor(dna) {
-  // Pega os primeiros 3 genes e transforma em RGB
-  const avg = dna.slice(0, 3).map(pair =>
-    Math.abs(pair[0] + pair[1]) * 85
-  );
-  return `rgb(${avg[0]}, ${avg[1]}, ${avg[2]})`;
-}
+    <div>
+      <button onclick="showGenes()">🧠 Ver DNA do melhor</button>
+    </div>
 
-function createAgent(dna = randomDNA()) {
-  return {
-    x: 0,
-    y: 0,
-    step: 0,
-    dna,
-    color: dnaToColor(dna),
-    finished: false,
-    fitness: 0
-  };
-}
+    <div>
+      <label>🎯 Objetivo (X, Y):</label>
+      <input id="goalX" type="number" value="99" min="0" max="99" style="width: 60px;">
+      <input id="goalY" type="number" value="99" min="0" max="99" style="width: 60px;">
+      <button onclick="updateGoal()">Atualizar</button>
+    </div>
+  </div>
 
-function fitness(agent) {
-  const dx = agent.x - GOAL[0];
-  const dy = agent.y - GOAL[1];
-  const dist = Math.sqrt(dx * dx + dy * dy);
-  return 1 / (dist + 1);
-}
+  <script>
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
+    const generationEl = document.getElementById("generation");
+    const colorEl = document.getElementById("color");
+    const speedEl = document.getElementById("speed");
 
-function updateAgent(agent) {
-  if (agent.finished || agent.step >= agent.dna.length) return;
+    const GRID_SIZE = 100;
+    const CELL_SIZE = canvas.width / GRID_SIZE;
+    const DNA_LENGTH = 200;
+    const POP_SIZE = 100;
+    const MUTATION_RATE = 0.01;
 
-  const [dx, dy] = agent.dna[agent.step];
-  agent.x = Math.max(0, Math.min(GRID_SIZE - 1, agent.x + dx));
-  agent.y = Math.max(0, Math.min(GRID_SIZE - 1, agent.y + dy));
-  agent.step++;
+    let GOAL = [GRID_SIZE - 1, GRID_SIZE - 1];
+    let generation = 0;
+    let population = [];
+    let bestAgent = null;
+    let speed = 30;
 
-  if (agent.x === GOAL[0] && agent.y === GOAL[1]) {
-    agent.finished = true;
-  }
-}
+    speedEl.addEventListener("input", e => speed = parseInt(e.target.value));
 
-function drawAgent(agent) {
-  ctx.fillStyle = agent.color;
-  ctx.fillRect(agent.x * CELL_SIZE, agent.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-}
-
-function nextGeneration() {
-  population.forEach(agent => {
-    agent.fitness = fitness(agent);
-  });
-
-  const sorted = population.slice().sort((a, b) => b.fitness - a.fitness);
-  bestAgent = sorted[0];
-  const elites = sorted.slice(0, POP_SIZE / 2);
-
-  const newPop = [];
-  while (newPop.length < POP_SIZE) {
-    const parentA = elites[Math.floor(Math.random() * elites.length)];
-    const parentB = elites[Math.floor(Math.random() * elites.length)];
-
-    const childDNA = parentA.dna.map((gene, i) => {
-      if (Math.random() < MUTATION_RATE) {
-        return [
-          [-1, 0, 1][Math.floor(Math.random()*3)],
-          [-1, 0, 1][Math.floor(Math.random()*3)]
-        ];
-      }
-      return Math.random() < 0.5 ? gene : parentB.dna[i];
-    });
-
-    newPop.push(createAgent(childDNA));
-  }
-
-  population = newPop;
-  generation++;
-}
-
-function drawGrid() {
-  ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-  // Objetivo
-  ctx.fillStyle = "green";
-  ctx.fillRect(GOAL[0] * CELL_SIZE, GOAL[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE);
-}
-
-function update() {
-  drawGrid();
-
-  if (generation < 200) {
-    population.forEach(agent => {
-      updateAgent(agent);
-      drawAgent(agent);
-    });
-
-    if (population.every(agent => agent.step >= DNA_LENGTH || agent.finished)) {
-      nextGeneration();
-      console.log("Geração:", generation, "| Melhor fitness:", bestAgent.fitness.toFixed(4));
+    function randomDNA() {
+      const dirs = [-1, 0, 1];
+      return Array.from({ length: DNA_LENGTH }, () => [
+        dirs[Math.floor(Math.random() * 3)],
+        dirs[Math.floor(Math.random() * 3)]
+      ]);
     }
-  } else {
-    // Após o treino, só executa o melhor agente
-    updateAgent(bestAgent);
-    drawAgent(bestAgent);
-  }
 
-  requestAnimationFrame(update);
-}
+    function dnaToColor(dna) {
+      const avg = dna.slice(0, 3).map(pair =>
+        Math.abs(pair[0] + pair[1]) * 85
+      );
+      return `rgb(${avg[0]}, ${avg[1]}, ${avg[2]})`;
+    }
 
-// Inicialização
-population = Array.from({length: POP_SIZE}, () => createAgent());
-update();
-</script>
+    function createAgent(dna = randomDNA()) {
+      return {
+        x: 0, y: 0, step: 0, dna,
+        color: dnaToColor(dna),
+        finished: false,
+        fitness: 0
+      };
+    }
+
+    function fitness(agent) {
+      const dx = agent.x - GOAL[0];
+      const dy = agent.y - GOAL[1];
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      return 1 / (dist + 1);
+    }
+
+    function updateAgent(agent) {
+      if (agent.finished || agent.step >= agent.dna.length) return;
+      const [dx, dy] = agent.dna[agent.step];
+      agent.x = Math.max(0, Math.min(GRID_SIZE - 1, agent.x + dx));
+      agent.y = Math.max(0, Math.min(GRID_SIZE - 1, agent.y + dy));
+      agent.step++;
+      if (agent.x === GOAL[0] && agent.y === GOAL[1]) agent.finished = true;
+    }
+
+    function drawAgent(agent) {
+      ctx.fillStyle = agent.color;
+      ctx.fillRect(agent.x * CELL_SIZE, agent.y * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+
+    function nextGeneration() {
+      population.forEach(agent => agent.fitness = fitness(agent));
+      const sorted = population.slice().sort((a, b) => b.fitness - a.fitness);
+      bestAgent = sorted[0];
+      const elites = sorted.slice(0, POP_SIZE / 2);
+      const newPop = [];
+
+      while (newPop.length < POP_SIZE) {
+        const a = elites[Math.floor(Math.random() * elites.length)];
+        const b = elites[Math.floor(Math.random() * elites.length)];
+        const childDNA = a.dna.map((gene, i) => {
+          if (Math.random() < MUTATION_RATE) {
+            return [
+              [-1, 0, 1][Math.floor(Math.random() * 3)],
+              [-1, 0, 1][Math.floor(Math.random() * 3)]
+            ];
+          }
+          return Math.random() < 0.5 ? gene : b.dna[i];
+        });
+        newPop.push(createAgent(childDNA));
+      }
+
+      population = newPop;
+      generation++;
+    }
+
+    function drawGrid() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      // Grade cinza
+      ctx.strokeStyle = "#fff";
+      for (let i = 0; i <= GRID_SIZE; i++) {
+        ctx.beginPath();
+        ctx.moveTo(i * CELL_SIZE, 0);
+        ctx.lineTo(i * CELL_SIZE, canvas.height);
+        ctx.stroke();
+
+        ctx.beginPath();
+        ctx.moveTo(0, i * CELL_SIZE);
+        ctx.lineTo(canvas.width, i * CELL_SIZE);
+        ctx.stroke();
+      }
+
+      // Objetivo
+      ctx.fillStyle = "green";
+      ctx.fillRect(GOAL[0] * CELL_SIZE, GOAL[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE);
+    }
+
+    function updateInfo() {
+      generationEl.textContent = generation;
+      colorEl.textContent = bestAgent ? bestAgent.color : "---";
+    }
+
+    function showGenes() {
+      if (bestAgent) {
+        console.log("Melhor DNA:", bestAgent.dna);
+        alert("Veja o console para visualizar o DNA do melhor agente.");
+      }
+    }
+
+    function updateGoal() {
+      const gx = parseInt(document.getElementById("goalX").value);
+      const gy = parseInt(document.getElementById("goalY").value);
+      if (gx >= 0 && gx < GRID_SIZE && gy >= 0 && gy < GRID_SIZE) {
+        GOAL = [gx, gy];
+      }
+    }
+
+    function updateLoop() {
+      drawGrid();
+
+      if (generation < 200) {
+        population.forEach(agent => {
+          updateAgent(agent);
+          drawAgent(agent);
+        });
+
+        if (population.every(a => a.step >= DNA_LENGTH || a.finished)) {
+          nextGeneration();
+        }
+      } else {
+        updateAgent(bestAgent);
+        drawAgent(bestAgent);
+      }
+
+      updateInfo();
+      setTimeout(() => requestAnimationFrame(updateLoop), 1000 / speed);
+    }
+
+    // Inicialização
+    population = Array.from({ length: POP_SIZE }, () => createAgent());
+    updateLoop();
+  </script>
 </body>
 </html>
-
