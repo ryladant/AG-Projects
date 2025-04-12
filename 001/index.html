@@ -66,7 +66,7 @@
 
       <div>
         <label for="speed">⏱ Velocidade:</label>
-        <input type="range" id="speed" min="1" max="60" value="30">
+        <input type="range" id="speed" min="1" max="120" value="30">
       </div>
 
       <div>
@@ -76,8 +76,8 @@
 
       <div>
         <label>🎯 Objetivo (X, Y):</label>
-        <input id="goalX" type="number" value="99" min="0" max="99" style="width: 60px;">
-        <input id="goalY" type="number" value="99" min="0" max="99" style="width: 60px;">
+        <input id="goalX" type="number" value="59" min="0" max="59" style="width: 60px;">
+        <input id="goalY" type="number" value="59" min="0" max="59" style="width: 60px;">
         <button onclick="updateGoal()">Atualizar</button>
       </div>
     </div>
@@ -87,20 +87,8 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    function resizeCanvas() {
-      canvas.width = canvas.clientWidth;
-      canvas.height = canvas.clientHeight;
-    }
-
-    window.addEventListener("resize", resizeCanvas);
-    resizeCanvas();
-
-    const generationEl = document.getElementById("generation");
-    const colorEl = document.getElementById("color");
-    const speedEl = document.getElementById("speed");
-
-    const GRID_SIZE = 100;
-    let CELL_SIZE = canvas.width / GRID_SIZE;
+    const GRID_SIZE = 60;
+    let CELL_SIZE = canvas.height / GRID_SIZE;
     const DNA_LENGTH = 200;
     const POP_SIZE = 100;
     const MUTATION_RATE = 0.01;
@@ -110,6 +98,21 @@
     let population = [];
     let bestAgent = null;
     let speed = 30;
+
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+
+      // ⚠️ Calcula corretamente com base no menor dos dois
+      CELL_SIZE = Math.min(canvas.width / GRID_SIZE, canvas.height / GRID_SIZE);
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    const generationEl = document.getElementById("generation");
+    const colorEl = document.getElementById("color");
+    const speedEl = document.getElementById("speed");
 
     speedEl.addEventListener("input", e => speed = parseInt(e.target.value));
 
@@ -186,19 +189,21 @@
 
     function drawGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      CELL_SIZE = canvas.width / GRID_SIZE;
+
+      // Recalcular CELL_SIZE se canvas mudou
+      CELL_SIZE = Math.min(canvas.width / GRID_SIZE, canvas.height / GRID_SIZE);
 
       // Grade cinza
       ctx.strokeStyle = "#333";
       for (let i = 0; i <= GRID_SIZE; i++) {
         ctx.beginPath();
         ctx.moveTo(i * CELL_SIZE, 0);
-        ctx.lineTo(i * CELL_SIZE, canvas.height);
+        ctx.lineTo(i * CELL_SIZE, GRID_SIZE * CELL_SIZE);
         ctx.stroke();
 
         ctx.beginPath();
         ctx.moveTo(0, i * CELL_SIZE);
-        ctx.lineTo(canvas.width, i * CELL_SIZE);
+        ctx.lineTo(GRID_SIZE * CELL_SIZE, i * CELL_SIZE);
         ctx.stroke();
       }
 
@@ -206,6 +211,7 @@
       ctx.fillStyle = "green";
       ctx.fillRect(GOAL[0] * CELL_SIZE, GOAL[1] * CELL_SIZE, CELL_SIZE, CELL_SIZE);
     }
+
 
     function updateInfo() {
       generationEl.textContent = generation;
