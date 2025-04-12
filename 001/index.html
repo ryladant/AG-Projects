@@ -6,28 +6,38 @@
   <title>AG - Quadrado Inteligente</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
+    html, body {
+      width: 100%;
+      height: 100%;
       background: black;
       color: lime;
       font-family: monospace;
+    }
+
+    #container {
       display: flex;
+      flex-direction: row;
+      width: 100%;
       height: 100vh;
     }
 
-    canvas {
+    #canvas {
+      width: 70%;
+      height: 100vh;
       background: black;
       image-rendering: pixelated;
-      border: 1px solid #555;
+      border-right: 1px solid #444;
     }
 
     #panel {
-      width: 300px;
+      width: 30%;
+      height: 100vh;
       padding: 20px;
       background-color: #111;
-      border-left: 2px solid lime;
       display: flex;
       flex-direction: column;
       gap: 20px;
+      overflow-y: auto;
     }
 
     .info { font-size: 14px; }
@@ -38,42 +48,58 @@
       padding: 5px;
       font-family: monospace;
     }
-    label { font-size: 14px; margin-bottom: 4px; display: block; }
+
+    label {
+      font-size: 14px;
+      margin-bottom: 4px;
+      display: block;
+    }
   </style>
 </head>
 <body>
-  <canvas id="canvas" width="500" height="500"></canvas>
+  <div id="container">
+    <canvas id="canvas"></canvas>
 
-  <div id="panel">
-    <div class="info">🧬 <strong>Geração:</strong> <span id="generation">0</span></div>
-    <div class="info">🎨 <strong>Cor Predominante:</strong> <span id="color">---</span></div>
+    <div id="panel">
+      <div class="info">🧬 <strong>Geração:</strong> <span id="generation">0</span></div>
+      <div class="info">🎨 <strong>Cor Predominante:</strong> <span id="color">---</span></div>
 
-    <div>
-      <label for="speed">⏱ Velocidade:</label>
-      <input type="range" id="speed" min="1" max="60" value="30">
-    </div>
+      <div>
+        <label for="speed">⏱ Velocidade:</label>
+        <input type="range" id="speed" min="1" max="60" value="30">
+      </div>
 
-    <div>
-      <button onclick="showGenes()">🧠 Ver DNA do melhor</button>
-    </div>
+      <div>
+        <button onclick="showGenes()">🧠 Ver DNA do melhor</button>
+      </div>
 
-    <div>
-      <label>🎯 Objetivo (X, Y):</label>
-      <input id="goalX" type="number" value="99" min="0" max="99" style="width: 60px;">
-      <input id="goalY" type="number" value="99" min="0" max="99" style="width: 60px;">
-      <button onclick="updateGoal()">Atualizar</button>
+      <div>
+        <label>🎯 Objetivo (X, Y):</label>
+        <input id="goalX" type="number" value="99" min="0" max="99" style="width: 60px;">
+        <input id="goalY" type="number" value="99" min="0" max="99" style="width: 60px;">
+        <button onclick="updateGoal()">Atualizar</button>
+      </div>
     </div>
   </div>
 
   <script>
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
+
+    function resizeCanvas() {
+      canvas.width = canvas.clientWidth;
+      canvas.height = canvas.clientHeight;
+    }
+
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
     const generationEl = document.getElementById("generation");
     const colorEl = document.getElementById("color");
     const speedEl = document.getElementById("speed");
 
     const GRID_SIZE = 100;
-    const CELL_SIZE = canvas.width / GRID_SIZE;
+    let CELL_SIZE = canvas.width / GRID_SIZE;
     const DNA_LENGTH = 200;
     const POP_SIZE = 100;
     const MUTATION_RATE = 0.01;
@@ -159,9 +185,10 @@
 
     function drawGrid() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
+      CELL_SIZE = canvas.width / GRID_SIZE;
 
       // Grade cinza
-      ctx.strokeStyle = "#fff";
+      ctx.strokeStyle = "#333";
       for (let i = 0; i <= GRID_SIZE; i++) {
         ctx.beginPath();
         ctx.moveTo(i * CELL_SIZE, 0);
