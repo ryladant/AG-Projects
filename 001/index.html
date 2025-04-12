@@ -70,7 +70,8 @@
       </div>
 
       <div>
-        <button onclick="showGenes()">🧠 Ver DNA do melhor</button>
+        <div><strong>🧠 DNA do Melhor:</strong></div>
+        <pre id="dnaDisplay" style="max-height: 200px; overflow-y: auto; font-size: 12px; background:#000; padding: 5px; border: 1px solid lime;"></pre>
       </div>
 
       <div>
@@ -209,12 +210,12 @@
     function updateInfo() {
       generationEl.textContent = generation;
       colorEl.textContent = bestAgent ? bestAgent.color : "---";
-    }
 
-    function showGenes() {
       if (bestAgent) {
-        console.log("Melhor DNA:", bestAgent.dna);
-        alert("Veja o console para visualizar o DNA do melhor agente.");
+        const dnaFormatted = bestAgent.dna
+          .map(pair => `[${pair[0]}, ${pair[1]}]`)
+          .join(", ");
+        document.getElementById("dnaDisplay").textContent = dnaFormatted;
       }
     }
 
