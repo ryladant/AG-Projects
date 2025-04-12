@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Genetic Lab</title>
+  <style>
+    body {
+      margin: 0;
+      background: black;
+      color: #00ff00;
+      font-family: monospace;
+      overflow: hidden;
+    }
+
+    h1 {
+      text-align: center;
+      font-size: 3em;
+      margin-top: 20px;
+      text-shadow: 0 0 10px #00ff00;
+    }
+
+    .projects {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      padding: 40px;
+      z-index: 2;
+      position: relative;
+    }
+
+    .project {
+      border: 1px solid #00ff00;
+      padding: 20px;
+      background: rgba(0, 0, 0, 0.8);
+      transition: 0.3s;
+      border-radius: 8px;
+      text-align: center;
+    }
+
+    .project:hover {
+      background: rgba(0, 255, 0, 0.1);
+      transform: scale(1.03);
+      cursor: pointer;
+    }
+
+    .project a {
+      color: #00ff00;
+      text-decoration: none;
+      font-size: 1.2em;
+    }
+
+    canvas {
+      position: fixed;
+      top: 0; left: 0;
+      z-index: 0;
+      pointer-events: none;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="matrixCanvas"></canvas>
+  <h1>💻 Genetic Algorithm Lab</h1>
+  <div class="projects" id="projectList"></div>
+
+  <script>
+    // === Seus projetos aqui ===
+    const projects = [
+      { name: "Labirinto AG", folder: "labirinto" },
+      { name: "AG Simples", folder: "ag-simples" },
+      { name: "DNA Cores", folder: "dna-cores" },
+      { name: "Jogo Plataforma", folder: "plataforma" },
+    ];
+
+    const container = document.getElementById("projectList");
+
+    projects.forEach(p => {
+      const div = document.createElement("div");
+      div.className = "project";
+      div.innerHTML = `<a href="${p.folder}/" target="_blank">${p.name}</a>`;
+      container.appendChild(div);
+    });
+  </script>
+
+  <!-- Matrix Effect -->
+  <script>
+    const canvas = document.getElementById('matrixCanvas');
+    const ctx = canvas.getContext('2d');
+
+    canvas.height = window.innerHeight;
+    canvas.width = window.innerWidth;
+
+    const letters = "アァイィウヴエカガキギクグケゲコゴサザシジスズセゼソゾタチッツヅテデトナニヌネノハヒフヘホマミムメモヤユヨラリルレロワヲンABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+    const fontSize = 14;
+    const columns = canvas.width / fontSize;
+    const drops = Array(Math.floor(columns)).fill(1);
+
+    function drawMatrix() {
+      ctx.fillStyle = "rgba(0, 0, 0, 0.05)";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = "#0F0";
+      ctx.font = fontSize + "px monospace";
+
+      for (let i = 0; i < drops.length; i++) {
+        const text = letters[Math.floor(Math.random() * letters.length)];
+        ctx.fillText(text, i * fontSize, drops[i] * fontSize);
+
+        if (drops[i] * fontSize > canvas.height || Math.random() > 0.975) {
+          drops[i] = 0;
+        }
+        drops[i]++;
+      }
+    }
+
+    setInterval(drawMatrix, 33);
+    window.addEventListener('resize', () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    });
+  </script>
+</body>
+</html>
+
